@@ -7,6 +7,7 @@ Author-email: dev@thedailyupside.com
 License-File: LICENSE
 Requires-Dist: singer-sdk>=0.13.0
 Requires-Dist: requests>=2.25.1
+Requires-Dist: google-auth>=2.0.0
 Dynamic: author
 Dynamic: author-email
 Dynamic: license-file

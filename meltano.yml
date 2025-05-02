@@ -5,7 +5,5 @@ plugins:
       namespace: tap_google_ad_manager
       executable: tap-google-ad-manager.sh
       settings:
-        - name: client_id
-        - name: client_secret
-        - name: refresh_token
+        - name: key_file_path
         - name: network_id

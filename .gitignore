@@ -1,1 +1,7 @@
 .DS_Store
+venv
+tap_google_ad_manager.egg-info/PKG-INFO
+tap_google_ad_manager.egg-info/requires.txt
+tap_google_ad_manager/client.py
+tap_google_ad_manager/streams.py
+tap_google_ad_manager/tap.py

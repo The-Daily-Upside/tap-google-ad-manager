@@ -10,6 +10,7 @@ setup(
     install_requires=[
         "singer-sdk>=0.13.0",
         "requests>=2.25.1",
+        "google-auth>=2.0.0",
     ],
     entry_points={
         "console_scripts": [

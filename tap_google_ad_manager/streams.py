@@ -37,6 +37,9 @@ class OrdersStream(GoogleAdManagerStream):
         ),
     ).to_dict()
 
+    def __init__(self, tap, key_file_path: str, *args, **kwargs):
+        super().__init__(tap, key_file_path, *args, **kwargs)
+
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         for item in response.json().get("orders", []):
             yield item
@@ -52,6 +55,9 @@ class OrdersStream(GoogleAdManagerStream):
 
 class BaseSimpleStream(GoogleAdManagerStream):
     primary_keys = ["name"]
+
+    def __init__(self, tap, key_file_path: str, *args, **kwargs):
+        super().__init__(tap, key_file_path, *args, **kwargs)
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         key = self.name

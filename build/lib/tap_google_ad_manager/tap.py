@@ -13,16 +13,15 @@ class TapGoogleAdManager(Tap):
     name = "tap-google-ad-manager"
 
     config_jsonschema = PropertiesList(
-        Property("client_id", StringType, required=True),
-        Property("client_secret", StringType, required=True),
-        Property("refresh_token", StringType, required=True),
+        Property("key_file_path", StringType, required=True),
         Property("network_id", StringType, required=True),
     ).to_dict()
 
     def discover_streams(self):
         """Return a list of discovered streams."""
+        key_file_path = self.config.get("key_file_path")
         return [
-            OrdersStream(self),
-            PlacementsStream(self),
-            ReportsStream(self),
+            OrdersStream(self, key_file_path),
+            PlacementsStream(self, key_file_path),
+            ReportsStream(self, key_file_path),
         ]
