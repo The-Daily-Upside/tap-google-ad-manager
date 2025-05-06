@@ -108,8 +108,7 @@ class ReportResultsStream(GoogleAdManagerStream):
         th.Property("report_id", th.StringType),
         th.Property("report_name", th.StringType),
         th.Property("run_time", th.DateTimeType),
-        # Allow nested row objects to include all properties
-        th.Property("rows", th.ArrayType(th.ObjectType(additional_properties=True))),
+        th.Property("rows", th.ArrayType(th.ObjectType()))
     ).to_dict()
 
     def __init__(self, tap, *args, **kwargs):
