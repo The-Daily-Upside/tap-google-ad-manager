@@ -190,8 +190,8 @@ class ReportResultsStream(GoogleAdManagerStream):
             time.sleep(poll_interval)
         raise TimeoutError("⌛ Timeout: report operation did not complete in time.")
 
-    def fetch_rows(self, result_name: str) -> Iterable[dict]:
-        row_index = 0
+    def fetch_all_rows(self, result_name: str) -> list:
+        all_rows = []
         page_token = None
 
         while True:
@@ -211,22 +211,11 @@ class ReportResultsStream(GoogleAdManagerStream):
             except JSONDecodeError:
                 raise RuntimeError(f"❌ Invalid JSON when fetching rows: {resp.text}")
 
-            rows = data.get("rows", [])
-            for row in rows:
-                self.logger.debug(f"📄 Row {row_index}: {row}")
-                yield {
-                    "row_id": f"{result_name}-{row_index}",
-                    "dimensionValues": [v.get("value") for v in row.get("dimensionValues", [])],
-                    "primaryValues": [
-                        v.get("value") for v in row.get("metricValueGroups", [{}])[0].get("primaryValues", [])
-                    ],
-                    "runTime": data.get("runTime")
-                }
-                row_index += 1
-
+            all_rows.extend(data.get("rows", []))
             page_token = data.get("nextPageToken")
             if not page_token:
                 break
+        return all_rows
 
     def get_records(self, context: Optional[dict]) -> Iterable[dict]:
         self.logger.info("🚦 Starting ReportResultsStream.get_records()")
@@ -258,6 +247,12 @@ class ReportResultsStream(GoogleAdManagerStream):
                 if not result_name:
                     self.logger.warning(f"⚠️ No result returned for report {report_name}")
                     continue
-                yield from self.fetch_rows(result_name)
+                yield {
+                    "result_name": result_name,
+                    "report_id": report_id,
+                    "report_name": report_name,
+                    "run_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                    "rows": self.fetch_all_rows(result_name)
+                }
             except Exception as e:
                 self.logger.error(f"❌ Failed to process report {report_name}: {e}")
