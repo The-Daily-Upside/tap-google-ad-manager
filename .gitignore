@@ -11,5 +11,8 @@ build/lib/tap_google_ad_manager/tap.py
 tap_google_ad_manager.egg-info/PKG-INFO
 tap_google_ad_manager.egg-info/PKG-INFO
 build/*
-build
+build/
+tap_google_ad_manager.egg-info/*
+tap_google_ad_manager.egg-info/
+tap_google_ad_manager.egg-info
 
