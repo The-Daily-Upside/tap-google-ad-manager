@@ -19,7 +19,7 @@ class TapGoogleAdManager(Tap):
         Property(
             "reports",
             ObjectType(
-                additional_properties=True  # Allows arbitrary nested objects (for each report)
+                additional_properties=True
             ),
             required=True,
         ),
