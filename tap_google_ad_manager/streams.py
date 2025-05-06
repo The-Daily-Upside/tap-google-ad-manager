@@ -109,8 +109,10 @@ class ReportResultsStream(GoogleAdManagerStream):
         th.Property("result_name", th.StringType),
         th.Property("report_id", th.StringType),
         th.Property("report_name", th.StringType),
-        th.Property("run_time", th.DateTimeType),
+        th.Property("report_display_name", th.StringType),
+        th.Property("report_definition", th.StringType),
         th.Property("rows", th.StringType),
+        th.Property("run_time", th.DateTimeType),
     ).to_dict()
 
     def __init__(self, tap, *args, **kwargs):
@@ -237,9 +239,10 @@ class ReportResultsStream(GoogleAdManagerStream):
                     "result_name": result_name,
                     "report_id": report_id,
                     "report_name": report_name,
-                    "run_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                    # Emit rows as raw JSON string
+                    "report_display_name": name,
+                    "report_definition": json.dumps(self.config.get("reports").get(name)),
                     "rows": json.dumps(rows),
+                    "run_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 }
             except Exception as e:
                 self.logger.error(f"❌ Failed to process report {report_name}: {e}")
