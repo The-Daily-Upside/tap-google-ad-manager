@@ -1,1 +1,0 @@
-"""Google Ad Manager tap package."""

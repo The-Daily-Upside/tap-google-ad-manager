@@ -1,2 +1,0 @@
-[console_scripts]
-tap-google-ad-manager = tap_google_ad_manager.tap:TapGoogleAdManager.cli
