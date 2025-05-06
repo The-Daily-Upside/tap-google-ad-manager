@@ -1,4 +1,5 @@
 import time
+import json
 from typing import Any, Dict, Optional, Iterable
 import requests
 from json import JSONDecodeError
@@ -8,7 +9,6 @@ from singer_sdk import typing as th
 # Constants for retry logic
 MAX_RETRIES = 5
 RETRY_DELAY = 2  # seconds
-
 
 class OrdersStream(GoogleAdManagerStream):
     name = "orders"
@@ -37,27 +37,34 @@ class OrdersStream(GoogleAdManagerStream):
         th.Property("effectiveTeams", th.ArrayType(th.StringType)),
         th.Property(
             "customFieldValues",
-            th.ArrayType(th.ObjectType(
-                th.Property("customField", th.StringType),
-                th.Property("value", th.StringType),
-            ), additional_properties=False)
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property("customField", th.StringType),
+                    th.Property("value", th.StringType)
+                )
+            )
         ),
     ).to_dict()
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
-        yield from response.json().get("orders", [])
+        self.logger.info("📡 [OrdersStream] Parsing orders response")
+        return response.json().get("orders", [])
 
     def get_url_params(self, context: Optional[dict], next_page_token: Optional[Any]) -> Dict[str, Any]:
+        self.logger.info(f"📡 [OrdersStream] next_page_token={next_page_token}")
         return {"page_token": next_page_token} if next_page_token else {}
 
     def get_next_page_token(self, response: requests.Response, previous_token: Optional[Any]) -> Optional[Any]:
-        return response.json().get("nextPageToken")
+        token = response.json().get("nextPageToken")
+        self.logger.info(f"📡 [OrdersStream] nextPageToken={token}")
+        return token
 
 
 class BaseSimpleStream(GoogleAdManagerStream):
     primary_keys = ["name"]
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
+        self.logger.info(f"📡 [{self.name}] Parsing response")
         return response.json().get(self.name, [])
 
     def get_url_params(self, context: Optional[dict], next_page_token: Optional[Any]) -> Dict[str, Any]:
@@ -98,162 +105,147 @@ class ReportsStream(BaseSimpleStream):
     ).to_dict()
 
 
-class ReportResultsStream(GoogleAdManagerStream):
-    name = "report_results"
-    path = ""
-    primary_keys = ["result_name"]
-    replication_key = None
-    schema = th.PropertiesList(
-        th.Property("result_name", th.StringType),
-        th.Property("report_id", th.StringType),
-        th.Property("report_name", th.StringType),
-        th.Property("run_time", th.DateTimeType),
-        th.Property("rows", th.ArrayType(th.ObjectType()))
-    ).to_dict()
+# class ReportResultsStream(GoogleAdManagerStream):
+#     name = "report_results"
+#     path = ""
+#     primary_keys = ["result_name"]
+#     replication_key = None
+#     # Treat rows as raw JSON string to preserve all fields
+#     schema = th.PropertiesList(
+#         th.Property("result_name", th.StringType),
+#         th.Property("report_id", th.StringType),
+#         th.Property("report_name", th.StringType),
+#         th.Property("run_time", th.DateTimeType),
+#         th.Property("rows", th.StringType),
+#     ).to_dict()
 
-    def __init__(self, tap, *args, **kwargs):
-        super().__init__(tap, *args, **kwargs)
-        self.tap = tap
+#     def __init__(self, tap, *args, **kwargs):
+#         super().__init__(tap, *args, **kwargs)
+#         self.tap = tap
 
-    def ensure_reports_exist(self, network_id: str, reports: Dict[str, dict]):
-        reports_url = f"https://admanager.googleapis.com/v1/networks/{network_id}/reports"
-        self.logger.info(f"📡 [ensure_reports_exist] GET {reports_url}")
+#     def ensure_reports_exist(self, network_id: str, reports: Dict[str, dict]):
+#         reports_url = f"{self.url_base}networks/{network_id}/reports"
+#         self.logger.info(f"📡 [ensure_reports_exist] GET {reports_url}")
 
-        def fetch_reports():
-            self.logger.info("🔍 Fetching existing reports...")
-            resp = self.request_decorator(requests.get)(reports_url, headers=self.http_headers)
-            self.logger.info(f"🔁 Fetch reports status: {resp.status_code}")
-            self.logger.info(f"📥 Fetch reports body: {resp.text}")
-            if resp.status_code != 200:
-                self.logger.error("❌ Failed to fetch existing reports.")
-                return {}
-            return {r.get("displayName"): r.get("reportId") for r in resp.json().get("reports", [])}
+#         def fetch_reports():
+#             self.logger.info("🔍 Fetching existing reports...")
+#             resp = self.request_decorator(requests.get)(reports_url, headers=self.http_headers)
+#             self.logger.info(f"🔁 Fetch reports status: {resp.status_code}")
+#             self.logger.info(f"📥 Fetch reports body: {resp.text}")
+#             if resp.status_code != 200:
+#                 self.logger.error("❌ Failed to fetch existing reports.")
+#                 return {}
+#             return {r.get("displayName"): r.get("reportId") for r in resp.json().get("reports", [])}
 
-        report_map = fetch_reports()
-        self.logger.info(f"🧾 Existing report map: {report_map}")
+#         report_map = fetch_reports()
+#         self.logger.info(f"🧾 Existing report map: {report_map}")
 
-        for name, spec in reports.items():
-            display_name = name
-            if display_name not in report_map:
-                self.logger.info(f"🆕 Creating report: {display_name}")
-                create_resp = self.request_decorator(requests.post)(
-                    reports_url, headers=self.http_headers, json={
-                        "displayName": display_name,
-                        **spec
-                    })
-                self.logger.info(f"📤 Create report status: {create_resp.status_code}")
-                self.logger.info(f"📥 Create report body: {create_resp.text}")
-                if create_resp.status_code != 200:
-                    self.logger.error(f"❌ Failed to create report: {display_name}")
-                    continue
+#         for name, spec in self.config.get("reports", {}).items():
+#             if name not in report_map:
+#                 self.logger.info(f"🆕 Creating report: {name}")
+#                 create_resp = self.request_decorator(requests.post)(
+#                     reports_url,
+#                     headers=self.http_headers,
+#                     json={"displayName": name, **spec}
+#                 )
+#                 self.logger.info(f"📤 Create report status: {create_resp.status_code}")
+#                 self.logger.info(f"📥 Create report body: {create_resp.text}")
+#                 if create_resp.status_code != 200:
+#                     self.logger.error(f"❌ Failed to create report: {name}")
+#                     continue
+#                 for attempt in range(MAX_RETRIES):
+#                     self.logger.info(f"⏱️ Waiting for report '{name}' (attempt {attempt+1})...")
+#                     time.sleep(RETRY_DELAY)
+#                     report_map = fetch_reports()
+#                     if name in report_map:
+#                         self.logger.info(f"✅ Report now exists: {name}")
+#                         break
+#         self.report_display_name_to_id = report_map
 
-                for attempt in range(MAX_RETRIES):
-                    self.logger.info(f"⏱️ Waiting for report '{display_name}' (attempt {attempt+1})...")
-                    report_map = fetch_reports()
-                    if display_name in report_map:
-                        self.logger.info(f"✅ Report now exists: {display_name}")
-                        break
-                    time.sleep(RETRY_DELAY)
-                else:
-                    self.logger.warning(f"⚠️ Report '{display_name}' did not appear after retries.")
+#     def run_report(self, report_name: str) -> str:
+#         url = f"{self.url_base}{report_name}:run"
+#         self.logger.info(f"🏃 [run_report] POST {url}")
+#         resp = self.request_decorator(requests.post)(url, headers=self.http_headers)
+#         self.logger.info(f"📤 Run report status: {resp.status_code}")
+#         self.logger.info(f"📥 Run report body: {resp.text}")
+#         try:
+#             return resp.json().get("name")
+#         except JSONDecodeError:
+#             raise RuntimeError("❌ Failed to decode run_report response.")
 
-        self.report_display_name_to_id = report_map
+#     def wait_for_completion(self, operation_name: str, poll_interval: float = 5.0, timeout: float = 300.0) -> dict:
+#         url = f"{self.url_base}{operation_name}"
+#         self.logger.info(f"📡 [wait_for_completion] Polling {url}")
+#         start = time.time()
+#         while time.time() - start < timeout:
+#             resp = self.request_decorator(requests.get)(url, headers=self.http_headers)
+#             self.logger.info(f"📤 Poll status: {resp.status_code}")
+#             self.logger.info(f"📥 Poll body: {resp.text}")
+#             try:
+#                 data = resp.json()
+#             except JSONDecodeError:
+#                 raise RuntimeError("❌ Failed to decode poll response.")
+#             if data.get("done"):
+#                 self.logger.info(f"✅ Report completed: {data}")
+#                 if data.get("error"):
+#                     raise RuntimeError(f"❌ Report error: {data['error']}")
+#                 return data.get("response", {})
+#             self.logger.info("⏳ Report still running...")
+#             time.sleep(poll_interval)
+#         raise TimeoutError("⌛ Timeout: report operation did not complete in time.")
 
-    def run_report(self, report_name: str) -> str:
-        url = f"https://admanager.googleapis.com/v1/{report_name}:run"
-        self.logger.info(f"🏃 [run_report] POST {url}")
-        resp = self.request_decorator(requests.post)(url, headers=self.http_headers)
-        self.logger.info(f"📤 Run report status: {resp.status_code}")
-        self.logger.info(f"📥 Run report body: {resp.text}")
-        try:
-            return resp.json().get("name")
-        except JSONDecodeError:
-            raise RuntimeError("❌ Failed to decode run_report response.")
+#     def fetch_all_rows(self, result_name: str) -> list:
+#         all_rows: list = []
+#         page_token: Optional[str] = None
+#         while True:
+#             url = f"{self.url_base}{result_name}:fetchRows"
+#             params = {"pageSize": 1000, **({"pageToken": page_token} if page_token else {})}
+#             self.logger.info(f"📡 [fetch_rows] GET {url} with params: {params}")
+#             resp = self.request_decorator(requests.get)(url, headers=self.http_headers, params=params)
+#             self.logger.info(f"📤 Fetch rows status: {resp.status_code}")
+#             body_preview = resp.text[:500].replace("\n", " ")
+#             self.logger.info(f"📥 Fetch rows body: {body_preview}...")
+#             try:
+#                 data = resp.json()
+#             except JSONDecodeError:
+#                 raise RuntimeError(f"❌ Invalid JSON when fetching rows: {resp.text}")
+#             all_rows.extend(data.get("rows", []))
+#             page_token = data.get("nextPageToken")
+#             if not page_token:
+#                 break
+#         return all_rows
 
-    def wait_for_completion(self, operation_name: str, poll_interval: float = 5.0, timeout: float = 300.0):
-        url = f"https://admanager.googleapis.com/v1/{operation_name}"
-        self.logger.info(f"📡 [wait_for_completion] Polling {url}")
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            resp = self.request_decorator(requests.get)(url, headers=self.http_headers)
-            self.logger.info(f"📤 Poll status: {resp.status_code}")
-            self.logger.info(f"📥 Poll body: {resp.text}")
-            try:
-                data = resp.json()
-            except JSONDecodeError:
-                raise RuntimeError("❌ Failed to decode poll response.")
-            if data.get("done"):
-                self.logger.info(f"✅ Report completed: {data}")
-                if "error" in data:
-                    raise RuntimeError(f"❌ Report error: {data['error']}")
-                return data.get("response", {})
-            self.logger.info("⏳ Report still running...")
-            time.sleep(poll_interval)
-        raise TimeoutError("⌛ Timeout: report operation did not complete in time.")
-
-    def fetch_all_rows(self, result_name: str) -> list:
-        all_rows = []
-        page_token = None
-
-        while True:
-            url = f"https://admanager.googleapis.com/v1/{result_name}:fetchRows"
-            params = {"pageSize": 1000}
-            if page_token:
-                params["pageToken"] = page_token
-
-            self.logger.info(f"📡 [fetch_rows] Fetching rows for {result_name}")
-            self.logger.info(f"📡 [fetch_rows] GET {url} with {params}")
-            resp = self.request_decorator(requests.get)(url, headers=self.http_headers, params=params)
-            self.logger.info(f"📤 Fetch rows status: {resp.status_code}")
-            self.logger.info(f"📥 Fetch rows body: {resp.text[:500]}...")
-
-            try:
-                data = resp.json()
-            except JSONDecodeError:
-                raise RuntimeError(f"❌ Invalid JSON when fetching rows: {resp.text}")
-
-            all_rows.extend(data.get("rows", []))
-            page_token = data.get("nextPageToken")
-            if not page_token:
-                break
-        return all_rows
-
-    def get_records(self, context: Optional[dict]) -> Iterable[dict]:
-        self.logger.info("🚦 Starting ReportResultsStream.get_records()")
-        network_id = self.config.get("network_id")
-        report_definitions = self.config.get("reports") or {}
-
-        if not network_id:
-            raise ValueError("Missing required config value: 'network_id'")
-
-        self.ensure_reports_exist(network_id, report_definitions)
-        display_name_to_id = self.report_display_name_to_id
-
-        for report_key, _ in report_definitions.items():
-            display_name = report_key
-            report_id = display_name_to_id.get(display_name)
-            if not report_id:
-                self.logger.warning(f"⚠️ Skipping report '{display_name}': No ID found.")
-                continue
-
-            report_name = f"networks/{network_id}/reports/{report_id}"
-            self.logger.info(f"📊 Processing report: {report_name}")
-
-            try:
-                operation_name = self.run_report(report_name)
-                self.logger.info(f"📡 Operation: {operation_name}")
-                response = self.wait_for_completion(operation_name)
-                result_name = response.get("reportResult")
-                self.logger.info(f"📁 Result name: {result_name}")
-                if not result_name:
-                    self.logger.warning(f"⚠️ No result returned for report {report_name}")
-                    continue
-                yield {
-                    "result_name": result_name,
-                    "report_id": report_id,
-                    "report_name": report_name,
-                    "run_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                    "rows": self.fetch_all_rows(result_name)
-                }
-            except Exception as e:
-                self.logger.error(f"❌ Failed to process report {report_name}: {e}")
+#     def get_records(self, context: Optional[dict]) -> Iterable[dict]:
+#         self.logger.info("🚦 Starting ReportResultsStream.get_records()")
+#         network_id = self.config.get("network_id")
+#         if not network_id:
+#             raise ValueError("Missing required config value: 'network_id'")
+#         reports_cfg = self.config.get("reports") or {}
+#         self.ensure_reports_exist(network_id, reports_cfg)
+#         for name, _ in reports_cfg.items():
+#             report_id = self.report_display_name_to_id.get(name)
+#             if not report_id:
+#                 self.logger.warning(f"⚠️ Skipping report '{name}': No ID found.")
+#                 continue
+#             report_name = f"networks/{network_id}/reports/{report_id}"
+#             self.logger.info(f"📊 Processing report: {report_name}")
+#             try:
+#                 operation_name = self.run_report(report_name)
+#                 self.logger.info(f"📡 Operation: {operation_name}")
+#                 response = self.wait_for_completion(operation_name)
+#                 result_name = response.get("reportResult")
+#                 self.logger.info(f"📁 Result name: {result_name}")
+#                 if not result_name:
+#                     self.logger.warning(f"⚠️ No result returned for report {report_name}")
+#                     continue
+#                 rows = self.fetch_all_rows(result_name)
+#                 yield {
+#                     "result_name": result_name,
+#                     "report_id": report_id,
+#                     "report_name": report_name,
+#                     "run_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+#                     # Emit rows as raw JSON string
+#                     "rows": json.dumps(rows),
+#                 }
+#             except Exception as e:
+#                 self.logger.error(f"❌ Failed to process report {report_name}: {e}")

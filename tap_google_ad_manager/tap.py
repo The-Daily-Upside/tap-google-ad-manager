@@ -6,7 +6,7 @@ from tap_google_ad_manager.streams import (
     OrdersStream,
     PlacementsStream,
     ReportsStream,
-    ReportResultsStream,
+    # ReportResultsStream,
 )
 
 class TapGoogleAdManager(Tap):
@@ -16,13 +16,13 @@ class TapGoogleAdManager(Tap):
     config_jsonschema = PropertiesList(
         Property("key_file_path", StringType, required=True),
         Property("network_id", StringType, required=True),
-        Property(
-            "reports",
-            ObjectType(
-                additional_properties=True
-            ),
-            required=True,
-        ),
+        # Property(
+        #     "reports",
+        #     ObjectType(
+        #         additional_properties=True
+        #     ),
+        #     required=True,
+        # ),
     ).to_dict()
     
     def discover_streams(self):
@@ -32,5 +32,5 @@ class TapGoogleAdManager(Tap):
             OrdersStream(self, key_file_path),
             PlacementsStream(self, key_file_path),
             ReportsStream(self, key_file_path),
-            ReportResultsStream(self, key_file_path),
+            # ReportResultsStream(self, key_file_path),
         ]

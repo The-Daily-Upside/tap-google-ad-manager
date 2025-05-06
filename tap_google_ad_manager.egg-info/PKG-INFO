@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: tap-google-ad-manager
 Version: 0.1.0
 Summary: A Singer tap for Google Ad Manager.
@@ -8,3 +8,8 @@ License-File: LICENSE
 Requires-Dist: singer-sdk>=0.13.0
 Requires-Dist: requests>=2.25.1
 Requires-Dist: google-auth>=2.0.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary
