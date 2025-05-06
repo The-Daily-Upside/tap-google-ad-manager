@@ -20,28 +20,26 @@ pipx install git+https://github.com/The-Daily-Upside/tap-google-ad-manager.git
 
 ### Supported Configuration Options
 
-The following configuration options are supported:
+The following configuration options are now supported:
 
-- `client_id`: The client ID for your Google API credentials.
-- `client_secret`: The client secret for your Google API credentials.
-- `refresh_token`: The refresh token for authenticating with Google APIs.
-- `network_id`: The network ID for your Google Ad Manager account.
+- **`service_account_key_file`**: The path to your Google Service Account key JSON file.
+- **`network_id`**: The network ID for your Google Ad Manager account.
 
-To view the full list of supported settings and capabilities, run:
-
-```bash
-tap-google-ad-manager --about
-```
+> **Note**: Service Accounts are used instead of OAuth for authentication. Ensure you have downloaded the JSON key file for your Service Account from the Google Cloud Console.
 
 ### Example Configuration File
 
 ```json
 {
-  "client_id": "your-client-id",
-  "client_secret": "your-client-secret",
-  "refresh_token": "your-refresh-token",
+  "service_account_key_file": "/path/to/your-service-account-key.json",
   "network_id": "your-network-id"
 }
+```
+
+To view the full list of supported settings and capabilities, run:
+
+```bash
+tap-google-ad-manager --about
 ```
 
 ---
@@ -60,7 +58,6 @@ tap-google-ad-manager --config config.json --catalog catalog.json
 ```
 
 ---
-
 
 ### Key Files and Directories
 
