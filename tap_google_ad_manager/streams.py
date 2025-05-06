@@ -97,16 +97,18 @@ class ReportsStream(BaseSimpleStream):
         th.Property("updateTime", th.DateTimeType)
     ).to_dict()
 
+
 class ReportResultsStream(GoogleAdManagerStream):
     name = "report_results"
-    path = ""  # Not used; dynamic per-report
-    primary_keys = ["row_id"]
+    path = ""
+    primary_keys = ["result_name"]
     replication_key = None
     schema = th.PropertiesList(
-        th.Property("row_id", th.StringType),
-        th.Property("dimensionValues", th.ArrayType(th.StringType)),
-        th.Property("primaryValues", th.ArrayType(th.StringType)),
-        th.Property("runTime", th.DateTimeType),
+        th.Property("result_name", th.StringType),
+        th.Property("report_id", th.StringType),
+        th.Property("report_name", th.StringType),
+        th.Property("run_time", th.DateTimeType),
+        th.Property("rows", th.ArrayType(th.ObjectType())),
     ).to_dict()
 
     def __init__(self, tap, *args, **kwargs):
@@ -178,7 +180,6 @@ class ReportResultsStream(GoogleAdManagerStream):
             self.logger.info(f"📥 Poll body: {resp.text}")
             try:
                 data = resp.json()
-                # {'name': 'networks/23016374850/operations/reports/runs/7434724294', 'metadata': {'@type': 'type.googleapis.com/google.ads.admanager.v1.RunReportMetadata', 'percentComplete': 100, 'report': 'networks/23016374850/reports/5586283036'}, 'done': True, 'response': {'@type': 'type.googleapis.com/google.ads.admanager.v1.RunReportResponse', 'reportResult': 'networks/23016374850/reports/5586283036/results/7434724294'}}
             except JSONDecodeError:
                 raise RuntimeError("❌ Failed to decode poll response.")
             if data.get("done"):
