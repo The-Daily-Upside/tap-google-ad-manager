@@ -40,7 +40,7 @@ class OrdersStream(GoogleAdManagerStream):
             th.ArrayType(th.ObjectType(
                 th.Property("customField", th.StringType),
                 th.Property("value", th.StringType),
-            ))
+            ), additional_properties=False)
         ),
     ).to_dict()
 
@@ -108,7 +108,8 @@ class ReportResultsStream(GoogleAdManagerStream):
         th.Property("report_id", th.StringType),
         th.Property("report_name", th.StringType),
         th.Property("run_time", th.DateTimeType),
-        th.Property("rows", th.ArrayType(th.ObjectType())),
+        # Allow nested row objects to include all properties
+        th.Property("rows", th.ArrayType(th.ObjectType(additional_properties=True))),
     ).to_dict()
 
     def __init__(self, tap, *args, **kwargs):
