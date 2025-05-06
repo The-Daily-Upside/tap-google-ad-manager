@@ -10,3 +10,6 @@ build/lib/tap_google_ad_manager/streams.py
 build/lib/tap_google_ad_manager/tap.py
 tap_google_ad_manager.egg-info/PKG-INFO
 tap_google_ad_manager.egg-info/PKG-INFO
+build/*
+build
+
