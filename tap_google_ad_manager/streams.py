@@ -111,7 +111,10 @@ class ReportResultsStream(GoogleAdManagerStream):
         th.Property("report_name", th.StringType),
         th.Property("report_display_name", th.StringType),
         th.Property("report_definition", th.StringType),
-        th.Property("rows", th.StringType),
+        th.Property("report_definition_dimensions", th.StringType),
+        th.Property("report_definition_metrics", th.StringType),
+        th.Property("report_results_dimension", th.StringType),
+        th.Property("report_results_metrics", th.StringType),
         th.Property("run_time", th.DateTimeType),
     ).to_dict()
 
@@ -235,14 +238,32 @@ class ReportResultsStream(GoogleAdManagerStream):
                     self.logger.warning(f"⚠️ No result returned for report {report_name}")
                     continue
                 rows = self.fetch_all_rows(result_name)
+                valid_rows = [r for r in rows if isinstance(r, dict)]
+                report_results_dimension = json.dumps([
+                    r.get("dimensionValues") for r in valid_rows if "dimensionValues" in r
+                ])
+                report_results_metrics = json.dumps([
+                    r.get("metricValueGroups") for r in valid_rows if "metricValueGroups" in r
+                ])
+                for idx, r in enumerate(rows):
+                    if not isinstance(r, dict):
+                        self.logger.warning(f"⚠️ Row {idx} is not a dict: {r}")
                 yield {
                     "result_name": result_name,
                     "report_id": report_id,
                     "report_name": report_name,
                     "report_display_name": name,
-                    "report_definition": json.dumps(self.config.get("reports").get(name)),
-                    "rows": json.dumps(rows),
+                    "report_definition": json.dumps(self.config.get("reports").get(name).get("reportDefinition")),
+                    "report_definition_dimensions": json.dumps(
+                        self.config.get("reports").get(name).get("reportDefinition").get("dimensions")
+                    ),
+                    "report_definition_metrics": json.dumps(
+                        self.config.get("reports").get(name).get("reportDefinition").get("metrics")
+                    ),
+                    "report_results_dimension": report_results_dimension,
+                    "report_results_metrics": report_results_metrics,
                     "run_time": time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 }
+
             except Exception as e:
                 self.logger.error(f"❌ Failed to process report {report_name}: {e}")
