@@ -24,6 +24,7 @@ The following configuration options are now supported:
 
 - **`service_account_key_file`**: The path to your Google Service Account key JSON file.
 - **`network_id`**: The network ID for your Google Ad Manager account.
+- **`reports`**: A dictionary of report configurations, where each key is a report name and the value is the report definition.
 
 > **Note**: Service Accounts are used instead of OAuth for authentication. Ensure you have downloaded the JSON key file for your Service Account from the Google Cloud Console.
 
@@ -32,7 +33,56 @@ The following configuration options are now supported:
 ```json
 {
   "service_account_key_file": "/path/to/your-service-account-key.json",
-  "network_id": "your-network-id"
+  "network_id": "your-network-id",
+  "reports": {
+    "line_items_last_year": {
+      "displayName": "line_items_last_year",
+      "reportDefinition": {
+        "dimensions": [
+          "DATE",
+          "ORDER_ID",
+          "ORDER_NAME",
+          "LINE_ITEM_ID",
+          "LINE_ITEM_NAME"
+        ],
+        "metrics": [
+          "IMPRESSIONS",
+          "CLICKS",
+          "CTR"
+        ],
+        "dateRange": {
+          "relative": "LAST_365_DAYS"
+        },
+        "reportType": "HISTORICAL"
+      }
+    },
+    "creatives_last_year": {
+      "displayName": "creatives_last_year",
+      "reportDefinition": {
+        "dimensions": [
+          "DATE",
+          "ORDER_ID",
+          "ORDER_NAME",
+          "LINE_ITEM_ID",
+          "LINE_ITEM_NAME",
+          "CREATIVE_ID",
+          "CREATIVE_NAME",
+          "CREATIVE_TYPE",
+          "CREATIVE_TYPE_NAME",
+          "RENDERED_CREATIVE_SIZE"
+        ],
+        "metrics": [
+          "IMPRESSIONS",
+          "CLICKS",
+          "CTR"
+        ],
+        "dateRange": {
+          "relative": "LAST_365_DAYS"
+        },
+        "reportType": "HISTORICAL"
+      }
+    }
+  }
 }
 ```
 
@@ -57,13 +107,33 @@ tap-google-ad-manager --config config.json --discover > catalog.json
 tap-google-ad-manager --config config.json --catalog catalog.json
 ```
 
+### Reports Functionality
+
+The tap supports running and fetching data from Google Ad Manager reports. Reports are defined in the `reports` configuration option and can include dimensions, metrics, and date ranges.
+
+#### Key Features:
+- Automatically ensures that reports exist in Google Ad Manager.
+- Creates missing reports based on the provided configuration.
+- Runs reports and waits for their completion.
+- Fetches rows from completed reports and loads them into the target system.
+
+#### Example Reports:
+- **Line Items Last Year**: Fetches data about line items over the past year, including impressions, clicks, and CTR.
+- **Creatives Last Year**: Fetches data about creatives over the past year, including impressions, clicks, CTR, and creative details.
+
+#### Logs:
+The tap provides detailed logs for report creation, execution, and data fetching. Look for logs like:
+- `📡 [ensure_reports_exist] GET ...`
+- `🏃 [run_report] POST ...`
+- `📥 Fetch rows body: ...`
+
 ---
 
 ### Key Files and Directories
 
 - **`tap_google_ad_manager/`**: Contains the main implementation of the tap, including:
   - `client.py`: Handles API requests and authentication.
-  - `streams.py`: Defines the data streams for Google Ad Manager resources.
+  - `streams.py`: Defines the data streams for Google Ad Manager resources, including reports.
   - `tap.py`: Entry point for the tap.
 - **`meltano.yml`**: Configuration file for Meltano integration.
 
