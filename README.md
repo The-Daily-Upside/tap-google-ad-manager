@@ -22,11 +22,22 @@ pipx install git+https://github.com/The-Daily-Upside/tap-google-ad-manager.git
 
 The following configuration options are now supported:
 
-- **`service_account_key_file`**: The path to your Google Service Account key JSON file.
-- **`network_id`**: The network ID for your Google Ad Manager account.
-- **`reports`**: A dictionary of report configurations, where each key is a report name and the value is the report definition.
+* **`service_account_key_file`**: The path to your Google Service Account key JSON file.
+* **`network_id`**: The network ID for your Google Ad Manager account.
+* **`reports`**: A dictionary of report configurations, where each key is a report name and the value is the report definition.
 
 > **Note**: Service Accounts are used instead of OAuth for authentication. Ensure you have downloaded the JSON key file for your Service Account from the Google Cloud Console.
+
+### How Report Execution Works
+
+Reports are defined in the `reports` section of the configuration. On each tap run:
+
+1. The tap checks if the configured reports exist in Google Ad Manager.
+2. If they do not exist, it programmatically creates them.
+3. The tap then runs each report and waits for its completion.
+4. Once completed, results are fetched using the `ReportResultsStream`.
+
+This ensures all reporting is centrally defined and reliably refreshed on each tap execution.
 
 ### Example Configuration File
 
@@ -109,33 +120,38 @@ tap-google-ad-manager --config config.json --catalog catalog.json
 
 ### Reports Functionality
 
-The tap supports running and fetching data from Google Ad Manager reports. Reports are defined in the `reports` configuration option and can include dimensions, metrics, and date ranges.
+The tap supports dynamic report execution using the configuration file. It ensures all defined reports are managed and refreshed automatically.
 
 #### Key Features:
-- Automatically ensures that reports exist in Google Ad Manager.
-- Creates missing reports based on the provided configuration.
-- Runs reports and waits for their completion.
-- Fetches rows from completed reports and loads them into the target system.
+
+* Automatically checks if configured reports exist.
+* Creates reports in Google Ad Manager if missing.
+* Executes each report on tap run and waits for completion.
+* Fetches and loads data from the `ReportResultsStream` based on completed report payloads.
 
 #### Example Reports:
-- **Line Items Last Year**: Fetches data about line items over the past year, including impressions, clicks, and CTR.
-- **Creatives Last Year**: Fetches data about creatives over the past year, including impressions, clicks, CTR, and creative details.
 
-#### Logs:
+* **Line Items Last Year**: Includes impressions, clicks, and CTR over the past year.
+* **Creatives Last Year**: Includes creative metadata and metrics over the past year.
+
+#### Logs
+
 The tap provides detailed logs for report creation, execution, and data fetching. Look for logs like:
-- `📡 [ensure_reports_exist] GET ...`
-- `🏃 [run_report] POST ...`
-- `📥 Fetch rows body: ...`
+
+* `📡 [ensure_reports_exist] GET ...`
+* `🏃 [run_report] POST ...`
+* `📥 Fetch rows body: ...`
 
 ---
 
 ### Key Files and Directories
 
-- **`tap_google_ad_manager/`**: Contains the main implementation of the tap, including:
-  - `client.py`: Handles API requests and authentication.
-  - `streams.py`: Defines the data streams for Google Ad Manager resources, including reports.
-  - `tap.py`: Entry point for the tap.
-- **`meltano.yml`**: Configuration file for Meltano integration.
+* **`tap_google_ad_manager/`**: Contains the main implementation of the tap, including:
+
+  * `client.py`: Handles API requests and authentication.
+  * `streams.py`: Defines the data streams for Google Ad Manager resources, including reports.
+  * `tap.py`: Entry point for the tap.
+* **`meltano.yml`**: Configuration file for Meltano integration.
 
 ---
 
