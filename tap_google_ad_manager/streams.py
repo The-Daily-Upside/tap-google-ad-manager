@@ -198,7 +198,7 @@ class ReportResultsStream(GoogleAdManagerStream):
         page_token: Optional[str] = None
         while True:
             url = f"{self.url_base}{result_name}:fetchRows"
-            params = {"pageSize": 1000, **({"pageToken": page_token} if page_token else {})}
+            params = {"pageSize": 10000, **({"pageToken": page_token} if page_token else {})}
             self.logger.info(f"📡 [fetch_rows] GET {url} with params: {params}")
             resp = self.request_decorator(requests.get)(url, headers=self.http_headers, params=params)
             self.logger.info(f"📤 Fetch rows status: {resp.status_code}")
