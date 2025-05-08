@@ -35,7 +35,7 @@ Reports are defined in the `reports` section of the configuration. On each tap r
 1. The tap checks if the configured reports exist in Google Ad Manager.
 2. If they do not exist, it programmatically creates them.
 3. The tap then runs each report and waits for its completion.
-4. Once completed, results are fetched using the `ReportResultsStream`.
+4. Once completed, results are fetched using the `ReportResultsStream` and loaded into the target system.
 
 This ensures all reporting is centrally defined and reliably refreshed on each tap execution.
 
@@ -117,17 +117,6 @@ tap-google-ad-manager --help
 tap-google-ad-manager --config config.json --discover > catalog.json
 tap-google-ad-manager --config config.json --catalog catalog.json
 ```
-
-### Reports Functionality
-
-The tap supports dynamic report execution using the configuration file. It ensures all defined reports are managed and refreshed automatically.
-
-#### Key Features:
-
-* Automatically checks if configured reports exist.
-* Creates reports in Google Ad Manager if missing.
-* Executes each report on tap run and waits for completion.
-* Fetches and loads data from the `ReportResultsStream` based on completed report payloads.
 
 #### Example Reports:
 
