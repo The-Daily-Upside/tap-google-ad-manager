@@ -31,19 +31,11 @@ class OrdersStream(GoogleAdManagerStream):
         th.Property("poNumber", th.StringType),
         th.Property("status", th.StringType),
         th.Property("salesperson", th.StringType),
-        th.Property("secondarySalespeople", th.ArrayType(th.StringType)),
-        th.Property("secondaryTraffickers", th.ArrayType(th.StringType)),
-        th.Property("appliedLabels", th.ArrayType(th.StringType)),
-        th.Property("effectiveTeams", th.ArrayType(th.StringType)),
-        th.Property(
-            "customFieldValues",
-            th.ArrayType(
-                th.ObjectType(
-                    th.Property("customField", th.StringType),
-                    th.Property("value", th.StringType)
-                )
-            )
-        ),
+        th.Property("secondarySalespeople", th.ObjectType()),
+        th.Property("secondaryTraffickers", th.ObjectType()),
+        th.Property("appliedLabels", th.ObjectType()),
+        th.Property("effectiveTeams", th.ObjectType()),
+        th.Property("customFieldValues", th.ObjectType()),
     ).to_dict()
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
@@ -78,9 +70,9 @@ class PlacementsStream(BaseSimpleStream):
         th.Property("displayName", th.StringType),
         th.Property("description", th.StringType),
         th.Property("targetingDescription", th.StringType),
-        th.Property("adUnits", th.ArrayType(th.StringType)),
+        th.Property("adUnits", th.ObjectType()),
         th.Property("status", th.StringType),
-        th.Property("appliedTeams", th.ArrayType(th.StringType)),
+        th.Property("appliedTeams", th.ObjectType()),
         th.Property("updateTime", th.DateTimeType)
     ).to_dict()
 
@@ -93,9 +85,9 @@ class ReportsStream(BaseSimpleStream):
         th.Property("reportId", th.StringType),
         th.Property("displayName", th.StringType),
         th.Property("description", th.StringType),
-        th.Property("dimensions", th.ArrayType(th.StringType)),
-        th.Property("metrics", th.ArrayType(th.StringType)),
-        th.Property("filters", th.ArrayType(th.ObjectType())),
+        th.Property("dimensions", th.ObjectType()),
+        th.Property("metrics", th.ObjectType()),
+        th.Property("filters", th.ObjectType()),
         th.Property("updateTime", th.DateTimeType)
     ).to_dict()
 
