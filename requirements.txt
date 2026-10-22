@@ -18,7 +18,7 @@ jsonschema==4.23.0
 jsonschema-specifications==2025.4.1
 packaging==25.0
 ply==3.11
-pyasn1==0.6.1
+pyasn1==0.6.4
 pyasn1_modules==0.4.2
 python-dotenv==1.1.0
 PyYAML==6.0.2
