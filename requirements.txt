@@ -2,7 +2,7 @@ appdirs==1.4.4
 attrs==25.3.0
 backoff==2.2.1
 cachetools==5.5.2
-certifi==2025.4.26
+certifi==2026.10.19
 charset-normalizer==3.4.1
 click==8.1.8
 fs==2.4.16
